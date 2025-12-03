@@ -1,0 +1,16 @@
+/* AgMap - Tailwind CSS v4 Entry Point */
+@import "tailwindcss";
+
+/* Custom Agoda-inspired theme */
+@theme {
+  --color-agoda-primary: #5392f9;
+  --color-agoda-primary-dark: #3b7de8;
+  --color-agoda-accent: #00c6ae;
+  --color-agoda-accent-dark: #00a896;
+  --color-agoda-dark: #1a1a2e;
+  --color-agoda-darker: #16213e;
+  --color-agoda-light: #f8f9fa;
+  --color-agoda-text: #f8f9fa;
+  --color-agoda-text-muted: #a0a0a0;
+  --color-agoda-text-subtle: #c0c0c0;
+}
