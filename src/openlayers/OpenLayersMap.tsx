@@ -1,68 +1,85 @@
-import { Map as OLMap, View } from 'ol';
-import { useGeographic as enableGeographicProjection } from 'ol/proj';
-import { type ReactElement, useEffect, useRef, useState } from 'react';
-import 'ol/ol.css';
-import { PMTilesLayer } from './PMTilesLayer';
-
-// Enable geographic coordinates (lon/lat) globally - must be called before map creation
-// Note: This is an OpenLayers utility, not a React hook, despite the naming convention
-enableGeographicProjection();
-
-/** Static PMTiles URL - Parcel handles bundling and provides runtime URL */
-const THAILAND_PMTILES_URL: string = new URL('./thailand.pmtiles', import.meta.url).href;
-
-/** Default center coordinates [longitude, latitude] - centered on Thailand */
-const DEFAULT_CENTER: [number, number] = [100.5, 13.75];
-
-/** Default zoom level - country overview */
-const DEFAULT_ZOOM: number = 6;
-
-/** Attribution for OpenStreetMap data */
-const DEFAULT_ATTRIBUTION: string = '© OpenStreetMap contributors';
-
 /**
  * OpenLayers Map Component
  *
  * Displays an interactive map using PMTiles vector tiles.
- * Uses the ol library directly with React hooks for lifecycle management.
+ * Uses custom hooks for lifecycle management and follows React best practices.
+ *
+ * @module openlayers/OpenLayersMap
+ */
+
+import { type ReactElement, useMemo, useRef } from 'react';
+import 'ol/ol.css';
+import { MapErrorBoundary } from './components/MapErrorBoundary';
+import { DEFAULT_MAP_CONFIG } from './config/defaults';
+import { useMapControls } from './hooks/useMapControls';
+import { useMapInstance } from './hooks/useMapInstance';
+import { usePMTilesLayer } from './hooks/usePMTilesLayer';
+
+/**
+ * OpenLayers Map Component
+ *
+ * Displays an interactive map using PMTiles vector tiles with optimized
+ * rendering and pluggable controls system.
+ *
+ * Features:
+ * - Centralized map instance management via useMapInstance hook
+ * - PMTiles layer management via usePMTilesLayer hook
+ * - Pluggable controls system via useMapControls hook
+ * - Error boundary for graceful error handling
+ * - Google Maps-inspired styling
+ *
+ * @example
+ * ```tsx
+ * <OpenLayersMap />
+ * ```
  */
 export function OpenLayersMap(): ReactElement {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<OLMap | null>(null);
 
-  useEffect(() => {
-    // Only initialize if container exists and map hasn't been created
-    if (!mapContainerRef.current) {
-      return;
-    }
+  // Memoize config to prevent unnecessary re-renders
+  const mapConfig = useMemo(() => DEFAULT_MAP_CONFIG, []);
 
-    // Create the OpenLayers map instance (without layers - those are added by child components)
-    const mapInstance: OLMap = new OLMap({
-      target: mapContainerRef.current,
-      layers: [],
-      view: new View({
-        center: DEFAULT_CENTER,
-        zoom: DEFAULT_ZOOM,
-      }),
-    });
+  // Initialize map instance
+  const { map, isReady, error } = useMapInstance({
+    containerRef: mapContainerRef,
+    config: mapConfig,
+  });
 
-    setMap(mapInstance);
+  // Add PMTiles layer
+  usePMTilesLayer({
+    map,
+    config: mapConfig.pmTiles,
+  });
 
-    // Cleanup on unmount
-    return () => {
-      mapInstance.setTarget(undefined);
-      setMap(null);
-    };
-  }, []);
+  // Add controls - memoize to prevent unnecessary re-renders
+  const controls = useMemo(() => mapConfig.controls ?? [], [mapConfig.controls]);
+  useMapControls({
+    map,
+    controls,
+  });
 
   return (
-    <div
-      ref={mapContainerRef}
-      className="w-full h-full"
-      style={{ minHeight: '400px', backgroundColor: '#f5f5f5' }}
-    >
-      {/* PMTiles layer as a subcomponent */}
-      <PMTilesLayer map={map} url={THAILAND_PMTILES_URL} attribution={DEFAULT_ATTRIBUTION} />
-    </div>
+    <MapErrorBoundary>
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full"
+        style={{ minHeight: '400px', backgroundColor: '#f5f5f5' }}
+      >
+        {error !== null && (
+          <div className="flex items-center justify-center w-full h-full">
+            <div className="text-center">
+              <p className="text-red-600">Map initialization failed: {error.message}</p>
+            </div>
+          </div>
+        )}
+        {!(isReady || error !== null) && (
+          <div className="flex items-center justify-center w-full h-full">
+            <div className="text-center">
+              <p className="text-gray-600">Loading map...</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </MapErrorBoundary>
   );
 }

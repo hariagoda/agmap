@@ -16,10 +16,13 @@ export type StyleValue = Style | Style[];
 /**
  * Function signature for special style handlers that need runtime logic.
  * Used for features where styling depends on properties beyond just 'layer' and 'class'.
+ * Resolution parameter is available for zoom-level-based filtering.
+ * Returns null to signal fallback to standard lookup.
  */
-export type SpecialStyleHandler = (feature: FeatureLike) => StyleValue;
+export type SpecialStyleHandler = (feature: FeatureLike, resolution?: number) => StyleValue | null;
 
 /**
  * The style function signature expected by OpenLayers VectorTile layer.
+ * Resolution parameter is available for zoom-level-based filtering.
  */
-export type StyleFunction = (feature: FeatureLike) => StyleValue;
+export type StyleFunction = (feature: FeatureLike, resolution?: number) => StyleValue;

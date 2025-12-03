@@ -9,12 +9,12 @@
  */
 
 import type { FeatureLike } from 'ol/Feature';
+import { getFeatureClass, getFeatureLayer } from '../utils/typeGuards';
+import { shouldHideFeatureByZoom } from './filters';
+import { SPECIAL_HANDLERS } from './handlers';
 import {
-  adminBoundaryStyle,
   // Aeroway
   aerowayStyle,
-  // Boundaries
-  boundaryStyle,
   bridgeStyle,
   // Building
   buildingStyle,
@@ -63,7 +63,7 @@ import {
   waterwayStyle,
   wetlandStyle,
 } from './styleObjects';
-import type { SpecialStyleHandler, StyleFunction, StyleValue } from './types';
+import type { StyleFunction, StyleValue } from './types';
 
 // =============================================================================
 // STYLE LOOKUP TABLE
@@ -207,27 +207,8 @@ export const HIDDEN_LAYERS: Set<string> = new Set([
   'place',
   'transportation_name',
   'aerodrome_label',
-]);
-
-// =============================================================================
-// SPECIAL HANDLERS
-// =============================================================================
-
-/**
- * Special handlers for layers that need runtime logic beyond simple lookup.
- * Used when styling depends on properties other than 'layer' and 'class'.
- */
-export const SPECIAL_HANDLERS: Map<string, SpecialStyleHandler> = new Map<
-  string,
-  SpecialStyleHandler
->([
-  [
-    'boundary',
-    (feature: FeatureLike): StyleValue => {
-      const adminLevel = feature.get('admin_level') as number;
-      return adminLevel && adminLevel <= 4 ? adminBoundaryStyle : boundaryStyle;
-    },
-  ],
+  'poi', // Hide POI points to reduce clutter at deep zoom levels
+  'mountain_peak', // Hide mountain peaks to reduce clutter
 ]);
 
 // =============================================================================
@@ -242,6 +223,7 @@ export const SPECIAL_HANDLERS: Map<string, SpecialStyleHandler> = new Map<
  * - Special handler check: O(1) Map lookup
  * - Style resolution: O(1) Map lookup (2 lookups worst case)
  * - No switch statements or string.includes() calls
+ * - Zoom-level-based filtering for buildings and other features
  *
  * @returns Style function compatible with OpenLayers VectorTile layer
  *
@@ -254,23 +236,33 @@ export const SPECIAL_HANDLERS: Map<string, SpecialStyleHandler> = new Map<
  * ```
  */
 export function createStyleFunction(): StyleFunction {
-  return (feature: FeatureLike): StyleValue => {
-    const layer = feature.get('layer') as string;
+  return (feature: FeatureLike, resolution?: number): StyleValue => {
+    const layer = getFeatureLayer(feature);
+    const featureClass = getFeatureClass(feature);
 
     // Fast path: hidden layers (common case, immediate rejection)
-    if (HIDDEN_LAYERS.has(layer)) {
+    if (!layer || HIDDEN_LAYERS.has(layer)) {
+      return emptyStyle;
+    }
+
+    // Apply zoom-level-based filtering for performance optimization
+    // Hide features at low zoom levels to reduce rendering load
+    if (shouldHideFeatureByZoom(feature, resolution)) {
       return emptyStyle;
     }
 
     // Check for special handlers (layers needing runtime logic)
     const specialHandler = SPECIAL_HANDLERS.get(layer);
     if (specialHandler) {
-      return specialHandler(feature);
+      const handlerResult = specialHandler(feature, resolution);
+      // If handler returns null, fall through to standard lookup
+      // Otherwise, use the handler result
+      if (handlerResult !== null) {
+        return handlerResult;
+      }
     }
 
     // Standard lookup: try "layer:class" first, then "layer" default
-    const featureClass = feature.get('class') as string;
-
     // Only construct composite key if class exists
     if (featureClass) {
       const specificStyle = STYLE_LOOKUP.get(`${layer}:${featureClass}`);
