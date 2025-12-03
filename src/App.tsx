@@ -1,6 +1,6 @@
 import { PillTabs } from '@shared/components/PillTabs';
 import { StatusIndicator } from '@shared/components/StatusIndicator';
-import { Icon } from '@shared/icons';
+import { Icon } from '@shared/icons/Icon';
 import { type ReactElement, useId, useState } from 'react';
 import { DeckGLMap } from './deckgl/DeckGLMap';
 import { OpenLayersMap } from './openlayers/OpenLayersMap';

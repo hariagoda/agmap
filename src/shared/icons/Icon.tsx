@@ -1,4 +1,10 @@
-import { memo, type ComponentType, type ReactElement, type SVGProps } from 'react';
+import {
+  type ComponentType,
+  type MemoExoticComponent,
+  memo,
+  type ReactElement,
+  type SVGProps,
+} from 'react';
 
 // Import SVG files as React components (via @parcel/transformer-svg-react)
 import ClockSvg from './svg/clock.svg';
@@ -10,10 +16,10 @@ import MapSvg from './svg/map.svg';
 export type IconName = 'map' | 'layers' | 'globe' | 'clock';
 
 /** SVG component type alias for cleaner typing */
-type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
+type SvgComponentType = ComponentType<SVGProps<SVGSVGElement>>;
 
 /** Static map of icon names to SVG components - defined outside component to avoid recreation */
-const ICON_MAP: Readonly<Record<IconName, SvgComponent>> = {
+const ICON_MAP: Readonly<Record<IconName, SvgComponentType>> = {
   map: MapSvg,
   layers: LayersSvg,
   globe: GlobeSvg,
@@ -45,21 +51,24 @@ interface IconProps {
  * <Icon name="globe" className="text-accent" />
  * ```
  */
-export const Icon = memo(function Icon({
-  name,
-  size = 'w-full h-full',
-  className = '',
-  'aria-label': ariaLabel,
-}: IconProps): ReactElement {
-  const SvgComponent = ICON_MAP[name];
-  const hasLabel = ariaLabel !== undefined && ariaLabel !== '';
+export const Icon: MemoExoticComponent<(props: IconProps) => ReactElement> = memo(
+  function IconComponent({
+    name,
+    size = 'w-full h-full',
+    className = '',
+    'aria-label': ariaLabel,
+  }: IconProps): ReactElement {
+    const IconSvg = ICON_MAP[name];
+    const hasLabel = ariaLabel !== undefined && ariaLabel !== '';
+    const computedClassName = className ? `${size} ${className}` : size;
 
-  return (
-    <SvgComponent
-      className={className ? `${size} ${className}` : size}
-      role={hasLabel ? 'img' : 'presentation'}
-      aria-label={hasLabel ? ariaLabel : undefined}
-      aria-hidden={!hasLabel}
-    />
-  );
-});
+    return (
+      <IconSvg
+        className={computedClassName}
+        role={hasLabel ? 'img' : 'presentation'}
+        aria-label={hasLabel ? ariaLabel : ''}
+        aria-hidden={!hasLabel}
+      />
+    );
+  },
+);

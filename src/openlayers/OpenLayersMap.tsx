@@ -1,21 +1,24 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Map, View } from 'ol';
-import { useGeographic } from 'ol/proj';
-import { PMTilesLayer } from './PMTilesLayer';
+import { Map as OLMap, View } from 'ol';
+import { useGeographic as enableGeographicProjection } from 'ol/proj';
+import { type ReactElement, useEffect, useRef, useState } from 'react';
 import 'ol/ol.css';
+import { PMTilesLayer } from './PMTilesLayer';
 
-/** Default center coordinates [longitude, latitude] */
-const DEFAULT_CENTER: [number, number] = [172.606201, -43.55651];
+// Enable geographic coordinates (lon/lat) globally - must be called before map creation
+// Note: This is an OpenLayers utility, not a React hook, despite the naming convention
+enableGeographicProjection();
 
-/** Default zoom level */
-const DEFAULT_ZOOM = 7;
+/** Static PMTiles URL - Parcel handles bundling and provides runtime URL */
+const THAILAND_PMTILES_URL: string = new URL('./thailand.pmtiles', import.meta.url).href;
 
-/** Default PMTiles URL */
-const DEFAULT_PMTILES_URL =
-  'https://r2-public.protomaps.com/protomaps-sample-datasets/nz-buildings-v3.pmtiles';
+/** Default center coordinates [longitude, latitude] - centered on Thailand */
+const DEFAULT_CENTER: [number, number] = [100.5, 13.75];
 
-/** Default attribution */
-const DEFAULT_ATTRIBUTION = '© Land Information New Zealand';
+/** Default zoom level - country overview */
+const DEFAULT_ZOOM: number = 6;
+
+/** Attribution for OpenStreetMap data */
+const DEFAULT_ATTRIBUTION: string = '© OpenStreetMap contributors';
 
 /**
  * OpenLayers Map Component
@@ -25,19 +28,16 @@ const DEFAULT_ATTRIBUTION = '© Land Information New Zealand';
  */
 export function OpenLayersMap(): ReactElement {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<Map | null>(null);
+  const [map, setMap] = useState<OLMap | null>(null);
 
   useEffect(() => {
-    // Enable geographic coordinates (lon/lat) instead of EPSG:3857
-    useGeographic();
-
     // Only initialize if container exists and map hasn't been created
     if (!mapContainerRef.current) {
       return;
     }
 
     // Create the OpenLayers map instance (without layers - those are added by child components)
-    const mapInstance = new Map({
+    const mapInstance: OLMap = new OLMap({
       target: mapContainerRef.current,
       layers: [],
       view: new View({
@@ -59,14 +59,10 @@ export function OpenLayersMap(): ReactElement {
     <div
       ref={mapContainerRef}
       className="w-full h-full"
-      style={{ minHeight: '400px' }}
+      style={{ minHeight: '400px', backgroundColor: '#f5f5f5' }}
     >
       {/* PMTiles layer as a subcomponent */}
-      <PMTilesLayer
-        map={map}
-        url={DEFAULT_PMTILES_URL}
-        attribution={DEFAULT_ATTRIBUTION}
-      />
+      <PMTilesLayer map={map} url={THAILAND_PMTILES_URL} attribution={DEFAULT_ATTRIBUTION} />
     </div>
   );
 }

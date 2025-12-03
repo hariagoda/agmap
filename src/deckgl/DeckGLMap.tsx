@@ -1,7 +1,7 @@
 import { Badge } from '@shared/components/Badge';
 import { IconBox } from '@shared/components/IconBox';
 import { StatusCard } from '@shared/components/StatusCard';
-import { Icon } from '@shared/icons';
+import { Icon } from '@shared/icons/Icon';
 import type { ReactElement } from 'react';
 
 /** Features supported by deck.gl */

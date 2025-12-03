@@ -1,26 +1,40 @@
-import { useEffect } from 'react';
-import type { Map } from 'ol';
+/**
+ * PMTiles Layer Component
+ *
+ * Renders PMTiles vector tiles on an OpenLayers map with Google Maps-inspired
+ * styling. Uses optimized O(1) style lookups for high performance.
+ *
+ * @module openlayers/PMTilesLayer
+ */
+
+import type { Map as OLMap } from 'ol';
 import VectorTile from 'ol/layer/VectorTile';
 import { PMTilesVectorSource } from 'ol-pmtiles';
-import { Style, Stroke, Fill } from 'ol/style';
+import { useEffect } from 'react';
+import { createStyleFunction } from './styles/styleLookup';
 
-/** Default PMTiles URL for the vector layer */
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/** Default PMTiles URL (fallback when not provided) */
 const DEFAULT_PMTILES_URL =
   'https://r2-public.protomaps.com/protomaps-sample-datasets/nz-buildings-v3.pmtiles';
 
+/** Default attribution for OpenStreetMap data */
+const DEFAULT_ATTRIBUTION = '© OpenStreetMap contributors';
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
 interface PMTilesLayerProps {
   /** Reference to the OpenLayers Map instance */
-  map: Map | null;
+  map: OLMap | null;
   /** URL to the PMTiles file */
   url?: string;
   /** Attribution text for the data source */
   attribution?: string;
-  /** Stroke color for vector features */
-  strokeColor?: string;
-  /** Stroke width for vector features */
-  strokeWidth?: number;
-  /** Fill color for vector features (supports rgba) */
-  fillColor?: string;
   /** Whether to declutter overlapping features */
   declutter?: boolean;
 }
@@ -28,16 +42,29 @@ interface PMTilesLayerProps {
 /**
  * PMTiles Layer Component
  *
- * Adds a PMTiles vector tile layer to an OpenLayers map.
- * Handles layer creation and cleanup automatically.
+ * Adds a PMTiles vector tile layer to an OpenLayers map with Google Maps-inspired
+ * styling. The component handles layer lifecycle (creation and cleanup) automatically.
+ *
+ * Features:
+ * - Google Maps-like color palette
+ * - Road casing (outline + fill) for better visibility
+ * - Differentiated styling for land use types
+ * - O(1) style lookup performance
+ * - Support for all OpenMapTiles layers
+ *
+ * @example
+ * ```tsx
+ * <PMTilesLayer
+ *   map={mapInstance}
+ *   url={pmtilesUrl}
+ *   attribution="© OpenStreetMap contributors"
+ * />
+ * ```
  */
 export function PMTilesLayer({
   map,
   url = DEFAULT_PMTILES_URL,
-  attribution = '© Land Information New Zealand',
-  strokeColor = 'gray',
-  strokeWidth = 1,
-  fillColor = 'rgba(20,20,20,0.9)',
+  attribution = DEFAULT_ATTRIBUTION,
   declutter = true,
 }: PMTilesLayerProps): null {
   useEffect(() => {
@@ -45,34 +72,24 @@ export function PMTilesLayer({
       return;
     }
 
-    // Create the vector tile layer with PMTiles source
+    // Create vector tile layer with PMTiles source and optimized styling
     const vectorLayer = new VectorTile({
       declutter,
       source: new PMTilesVectorSource({
         url,
         attributions: [attribution],
       }),
-      style: new Style({
-        stroke: new Stroke({
-          color: strokeColor,
-          width: strokeWidth,
-        }),
-        fill: new Fill({
-          color: fillColor,
-        }),
-      }),
+      style: createStyleFunction(),
     });
 
-    // Add layer to map
     map.addLayer(vectorLayer);
 
-    // Cleanup: remove layer on unmount or when dependencies change
+    // Cleanup on unmount or when dependencies change
     return () => {
       map.removeLayer(vectorLayer);
     };
-  }, [map, url, attribution, strokeColor, strokeWidth, fillColor, declutter]);
+  }, [map, url, attribution, declutter]);
 
-  // This component doesn't render anything - it just manages the layer
+  // This component doesn't render DOM elements
   return null;
 }
-
