@@ -1,16 +1,81 @@
 /* AgMap - Tailwind CSS v4 Entry Point */
 @import "tailwindcss";
 
-/* Custom Agoda-inspired theme */
+/* Custom theme with sophisticated dark palette */
 @theme {
-  --color-agoda-primary: #5392f9;
-  --color-agoda-primary-dark: #3b7de8;
-  --color-agoda-accent: #00c6ae;
-  --color-agoda-accent-dark: #00a896;
-  --color-agoda-dark: #1a1a2e;
-  --color-agoda-darker: #16213e;
-  --color-agoda-light: #f8f9fa;
-  --color-agoda-text: #f8f9fa;
-  --color-agoda-text-muted: #a0a0a0;
-  --color-agoda-text-subtle: #c0c0c0;
+  /* Typography */
+  --font-family-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Core palette - Deep space inspired */
+  --color-void: #08090a;
+  --color-surface: #0d0f12;
+  --color-surface-raised: #141619;
+  --color-surface-overlay: #1a1d21;
+  --color-border: #2a2d32;
+  --color-border-subtle: #1f2226;
+
+  /* Accent - Electric cyan */
+  --color-accent: #22d3ee;
+  --color-accent-muted: #22d3ee40;
+  --color-accent-glow: #22d3ee20;
+
+  /* Secondary accent - Warm amber */
+  --color-secondary: #fbbf24;
+  --color-secondary-muted: #fbbf2440;
+
+  /* Text hierarchy */
+  --color-text-primary: #f4f4f5;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+  --color-text-ghost: #52525b;
+}
+
+/* Base styles */
+body {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle noise texture overlay */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  z-index: 9999;
+}
+
+/* Glow effects */
+.glow-accent {
+  box-shadow:
+    0 0 20px var(--color-accent-glow),
+    0 0 40px var(--color-accent-glow);
+}
+
+/* Smooth transitions */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-ghost);
 }

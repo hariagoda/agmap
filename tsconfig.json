@@ -9,6 +9,10 @@
     /* Modules */
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["src/shared/*"]
+    },
 
     /* Emit */
     "noEmit": true,
