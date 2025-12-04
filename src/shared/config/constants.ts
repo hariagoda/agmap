@@ -40,6 +40,9 @@ export const ZOOM_BUILDING = 18;
 /**
  * Thailand PMTiles URL - resolved at build time via import.meta.url
  * This points to the local PMTiles file bundled with the application.
+ *
+ * The file is stored using Git LFS (Large File Storage) since it exceeds
+ * GitHub's 100MB file size limit.
  */
 export const THAILAND_PMTILES_URL: string = new URL(
   '../../openlayers/thailand.pmtiles',
