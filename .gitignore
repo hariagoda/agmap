@@ -2,3 +2,6 @@
 dist/
 node_modules/
 .pnpm-store/
+
+# Large data files (exceed GitHub's 100MB limit)
+*.pmtiles
