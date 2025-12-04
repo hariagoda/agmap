@@ -1,32 +1,91 @@
 import { PillTabs } from '@shared/components/PillTabs';
 import { StatusIndicator } from '@shared/components/StatusIndicator';
 import { Icon } from '@shared/icons/Icon';
-import { type ReactElement, useId, useState } from 'react';
-import { DeckGLMap } from './deckgl/DeckGLMap';
+import { type ReactElement, useEffect, useId, useState } from 'react';
+import { MapLibreMap } from './maplibre/MapLibreMap';
 import { OpenLayersMap } from './openlayers/OpenLayersMap';
 
 import './index.css';
 
 /** Available map engine options */
-type MapEngine = 'openlayers' | 'deckgl';
+type MapEngine = 'openlayers' | 'maplibre';
 
 /**
  * Tab configuration for map engine selection
  */
 const TAB_CONFIG: { id: MapEngine; label: string }[] = [
+  { id: 'maplibre', label: 'MapLibre GL JS' },
   { id: 'openlayers', label: 'OpenLayers' },
-  { id: 'deckgl', label: 'deck.gl' },
 ];
+
+/**
+ * Valid map engine IDs for validation
+ */
+const VALID_ENGINES: Set<MapEngine> = new Set(TAB_CONFIG.map((tab) => tab.id));
+
+/**
+ * Get map engine from URL hash
+ * @returns Valid map engine or null if invalid/missing
+ */
+function getEngineFromHash(): MapEngine | null {
+  const hash = window.location.hash.slice(1); // Remove leading '#'
+  const engine = hash.replace(/^\//, '') as MapEngine; // Remove leading '/' if present
+  return VALID_ENGINES.has(engine) ? engine : null;
+}
+
+/**
+ * Update URL hash to reflect active engine
+ * @param engine - The map engine to set in the URL
+ */
+function updateHash(engine: MapEngine): void {
+  const newHash = `#/${engine}`;
+  if (window.location.hash !== newHash) {
+    window.history.replaceState(null, '', newHash);
+  }
+}
 
 /**
  * AgMap - Internal Agoda Maps Application
  *
  * Main application component with tabbed navigation between
- * OpenLayers and deck.gl map engines.
+ * OpenLayers, deck.gl, and MapLibre GL JS map engines.
+ * Supports URL routing via hash-based navigation.
  */
 export function App(): ReactElement {
-  const [activeEngine, setActiveEngine] = useState<MapEngine>('openlayers');
+  // Initialize state from URL hash or default to 'maplibre'
+  const [activeEngine, setActiveEngine] = useState<MapEngine>(() => {
+    return getEngineFromHash() ?? 'maplibre';
+  });
   const panelId = useId();
+
+  // Sync URL hash with active engine state
+  useEffect(() => {
+    updateHash(activeEngine);
+  }, [activeEngine]);
+
+  // Listen for hash changes (back/forward navigation)
+  useEffect(() => {
+    const handleHashChange = (): void => {
+      const engineFromHash = getEngineFromHash();
+      if (engineFromHash) {
+        // Use functional update to avoid dependency on activeEngine
+        setActiveEngine((currentEngine) => {
+          return engineFromHash !== currentEngine ? engineFromHash : currentEngine;
+        });
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []); // Empty dependency array - listener only needs to be set up once
+
+  // Handle tab change - updates both state and URL
+  const handleTabChange = (engine: MapEngine): void => {
+    setActiveEngine(engine);
+    updateHash(engine);
+  };
 
   return (
     <div className="min-h-screen bg-void flex flex-col relative overflow-hidden">
@@ -73,7 +132,7 @@ export function App(): ReactElement {
               <PillTabs
                 tabs={TAB_CONFIG}
                 activeTab={activeEngine}
-                onTabChange={setActiveEngine}
+                onTabChange={handleTabChange}
                 ariaLabel="Map engine selection"
               />
             </div>
@@ -101,16 +160,16 @@ export function App(): ReactElement {
         </div>
 
         <div
-          id={`${panelId}-deckgl`}
+          id={`${panelId}-maplibre`}
           role="tabpanel"
-          aria-labelledby={`${panelId}-deckgl-tab`}
+          aria-labelledby={`${panelId}-maplibre-tab`}
           className={`absolute inset-0 transition-all duration-500 ${
-            activeEngine === 'deckgl'
+            activeEngine === 'maplibre'
               ? 'opacity-100 z-10 translate-y-0'
               : 'opacity-0 z-0 pointer-events-none translate-y-4'
           }`}
         >
-          <DeckGLMap />
+          <MapLibreMap />
         </div>
       </main>
 

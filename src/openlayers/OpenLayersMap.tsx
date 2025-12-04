@@ -4,23 +4,6 @@
  * Displays an interactive map using PMTiles vector tiles.
  * Uses custom hooks for lifecycle management and follows React best practices.
  *
- * @module openlayers/OpenLayersMap
- */
-
-import { type ReactElement, useMemo, useRef } from 'react';
-import 'ol/ol.css';
-import { MapErrorBoundary } from './components/MapErrorBoundary';
-import { DEFAULT_MAP_CONFIG } from './config/defaults';
-import { useMapControls } from './hooks/useMapControls';
-import { useMapInstance } from './hooks/useMapInstance';
-import { usePMTilesLayer } from './hooks/usePMTilesLayer';
-
-/**
- * OpenLayers Map Component
- *
- * Displays an interactive map using PMTiles vector tiles with optimized
- * rendering and pluggable controls system.
- *
  * Features:
  * - Centralized map instance management via useMapInstance hook
  * - PMTiles layer management via usePMTilesLayer hook
@@ -28,21 +11,85 @@ import { usePMTilesLayer } from './hooks/usePMTilesLayer';
  * - Error boundary for graceful error handling
  * - Google Maps-inspired styling
  *
+ * @module openlayers/OpenLayersMap
+ *
  * @example
  * ```tsx
+ * // Basic usage
  * <OpenLayersMap />
+ *
+ * // With custom options
+ * <OpenLayersMap
+ *   center={[100.5, 13.75]}
+ *   zoom={12}
+ *   enableBangkokControl={false}
+ *   onLoad={() => console.log('Map loaded')}
+ * />
  * ```
  */
-export function OpenLayersMap(): ReactElement {
+
+import type { ReactElement } from 'react';
+import { useMemo, useRef } from 'react';
+import 'ol/ol.css';
+
+import { ErrorDisplay, LoadingState, MapErrorBoundary } from './components';
+import { BANGKOK_ZOOM_CONTROL_CONFIG, DEFAULT_MAP_CONFIG } from './config';
+import type { OpenLayersMapProps } from './config';
+import { useMapControls, useMapInstance, usePMTilesLayer } from './hooks';
+import { COLORS } from './styles';
+
+/**
+ * OpenLayers Map Component
+ *
+ * Renders an interactive vector map with PMTiles data source.
+ * Provides a clean, modular implementation with configurable
+ * behavior through props.
+ *
+ * @param props - Component props
+ * @returns Map component element
+ */
+export function OpenLayersMap({
+  center,
+  zoom,
+  enableBangkokControl = true,
+  config,
+  onLoad,
+  onError,
+  className,
+}: OpenLayersMapProps): ReactElement {
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Memoize config to prevent unnecessary re-renders
-  const mapConfig = useMemo(() => DEFAULT_MAP_CONFIG, []);
+  const mapConfig = useMemo(() => {
+    const baseConfig = {
+      ...DEFAULT_MAP_CONFIG,
+      ...config,
+      view: {
+        ...DEFAULT_MAP_CONFIG.view,
+        ...config?.view,
+        ...(center && { center }),
+        ...(zoom !== undefined && { zoom }),
+      },
+    };
+
+    // Configure controls based on props
+    if (!enableBangkokControl) {
+      baseConfig.controls = baseConfig.controls?.filter(
+        (ctrl) => ctrl.id !== 'bangkok-zoom'
+      ) ?? [];
+    } else if (!baseConfig.controls?.some((ctrl) => ctrl.id === 'bangkok-zoom')) {
+      baseConfig.controls = [...(baseConfig.controls ?? []), BANGKOK_ZOOM_CONTROL_CONFIG];
+    }
+
+    return baseConfig;
+  }, [center, zoom, enableBangkokControl, config]);
 
   // Initialize map instance
   const { map, isReady, error } = useMapInstance({
     containerRef: mapContainerRef,
     config: mapConfig,
+    onMapReady: onLoad ? () => onLoad() : undefined,
+    onError,
   });
 
   // Add PMTiles layer
@@ -62,24 +109,20 @@ export function OpenLayersMap(): ReactElement {
     <MapErrorBoundary>
       <div
         ref={mapContainerRef}
-        className="w-full h-full"
-        style={{ minHeight: '400px', backgroundColor: '#f5f5f5' }}
+        className={`w-full h-full relative ${className ?? ''}`}
+        style={{ minHeight: '400px', backgroundColor: COLORS.land }}
       >
+        {/* Error state */}
         {error !== null && (
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="text-center">
-              <p className="text-red-600">Map initialization failed: {error.message}</p>
-            </div>
-          </div>
+          <ErrorDisplay error={error} onRetry={() => window.location.reload()} />
         )}
-        {!(isReady || error !== null) && (
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="text-center">
-              <p className="text-gray-600">Loading map...</p>
-            </div>
-          </div>
-        )}
+
+        {/* Loading state */}
+        {!(isReady || error !== null) && <LoadingState />}
       </div>
     </MapErrorBoundary>
   );
 }
+
+// Re-export types for consumers
+export type { OpenLayersMapProps } from './config';

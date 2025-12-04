@@ -1,7 +1,7 @@
 /**
  * Configuration type definitions for OpenLayers map system.
  *
- * @module config/types
+ * @module openlayers/config/types
  */
 
 /**
@@ -66,4 +66,50 @@ export interface MapConfig {
   render?: Partial<VectorTileRenderConfig>;
   /** Controls configuration */
   controls?: ControlConfig[];
+}
+
+/**
+ * Props for the OpenLayersMap component.
+ *
+ * Provides configuration options for map initialization,
+ * controls, and behavior.
+ */
+export interface OpenLayersMapProps {
+  /**
+   * Initial center coordinates [longitude, latitude].
+   * @default THAILAND_CENTER
+   */
+  center?: [number, number];
+
+  /**
+   * Initial zoom level.
+   * @default ZOOM_COUNTRY (6)
+   */
+  zoom?: number;
+
+  /**
+   * Enable Bangkok zoom control button.
+   * @default true
+   */
+  enableBangkokControl?: boolean;
+
+  /**
+   * Custom map configuration to merge with defaults.
+   */
+  config?: Partial<MapConfig>;
+
+  /**
+   * Callback when the map is loaded and ready.
+   */
+  onLoad?: () => void;
+
+  /**
+   * Callback when map initialization fails.
+   */
+  onError?: (error: Error) => void;
+
+  /**
+   * Additional CSS class names for the container.
+   */
+  className?: string;
 }
